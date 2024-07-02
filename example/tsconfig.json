@@ -1,0 +1,10 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "react-native-layout-context": ["../src/index"],
+      "react-native-layout-context/*": ["../src/*"]
+    }
+  }
+}
