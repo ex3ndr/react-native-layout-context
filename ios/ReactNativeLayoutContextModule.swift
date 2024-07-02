@@ -34,25 +34,29 @@ public class ReactNativeLayoutContextModule: Module {
     @objc func keyboardWillShow(aNotification: Notification) {
         let view = getKeyboardViewReactNativeAnimated()
         let responder = getCurrentFirstResponder()
-        print("[KEYBOARD]: Will Show: \(view), \(responder)")
+        let contextKey = responder?.currentLayoutContextKey() ?? "<none>"
+        print("[KEYBOARD]: Will Show: \(contextKey), \(responder)")
     }
     
     @objc func keyboardDidShow(aNotification: Notification) {
         let view = getKeyboardViewReactNativeAnimated()
         let responder = getCurrentFirstResponder()
-        print("[KEYBOARD]: Did Show: \(view), \(responder)")
+        let contextKey = responder?.currentLayoutContextKey() ?? "<none>"
+        print("[KEYBOARD]: Did Show: \(contextKey), \(responder)")
     }
     
     @objc func keyboardWillHide(aNotification: Notification) {
         let view = getKeyboardViewReactNativeAnimated()
         let responder = getCurrentFirstResponder()
-        print("[KEYBOARD]: Will Hide: \(view), \(responder)")
+        let contextKey = responder?.currentLayoutContextKey() ?? "<none>"
+        print("[KEYBOARD]: Will Hide: \(contextKey), \(responder)")
     }
     
     @objc func keyboardDidHide(aNotification: Notification) {
         let view = getKeyboardViewReactNativeAnimated()
         let responder = getCurrentFirstResponder()
-        print("[KEYBOARD]: Did Hide: \(view), \(responder)")
+        let contextKey = responder?.currentLayoutContextKey() ?? "<none>"
+        print("[KEYBOARD]: Did Hide: \(contextKey), \(responder)")
     }
     
     //
@@ -91,7 +95,7 @@ public class ReactNativeLayoutContextModule: Module {
 }
 
 //
-// Helpers
+// Keyboard
 //
 
 func findClass(name: String, inViewsList: [UIView]) -> UIView? {
@@ -116,12 +120,16 @@ func getKeyboardViewReactNativeAnimated() -> UIView? {
   return findClass(name: "UIInputSetHostView", inViewsList: keyboardContainer!.subviews)
 }
 
-func getCurrentFirstResponder() -> UIResponder? {
+//
+// First responder
+//
+
+func getCurrentFirstResponder() -> UIView? {
   return UIApplication.shared.windows.first?.currentFirstResponder()
 }
 
 extension UIView {
-    func currentFirstResponder() -> UIResponder? {
+    func currentFirstResponder() -> UIView? {
         if self.isFirstResponder {
             return self
         }
@@ -134,4 +142,17 @@ extension UIView {
         
         return nil
      }
+}
+
+//
+// Context
+//
+
+extension UIView {
+    func currentLayoutContextKey() -> String? {
+        if self is ReactNativeLayoutContextView {
+            return (self as! ReactNativeLayoutContextView).name
+        }
+        return self.superview?.currentLayoutContextKey()
+    }
 }

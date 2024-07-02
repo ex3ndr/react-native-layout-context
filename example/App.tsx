@@ -5,7 +5,8 @@ import { LayoutContextView } from 'react-native-layout-context';
 
 const ContentView = React.memo(() => {
   return (
-    <View style={{ flexGrow: 1, alignSelf: 'stretch', justifyContent: 'center', alignItems: 'center' }}>
+    <View style={{ flexGrow: 1, alignSelf: 'stretch', justifyContent: 'center', alignItems: 'center', gap: 16 }}>
+      <TextInput style={{ width: 200, height: 48, backgroundColor: 'white', borderRadius: 8, fontSize: 18, paddingHorizontal: 16 }} placeholder='Tap me' />
       <TextInput style={{ width: 200, height: 48, backgroundColor: 'white', borderRadius: 8, fontSize: 18, paddingHorizontal: 16 }} placeholder='Tap me' />
     </View>
   )
