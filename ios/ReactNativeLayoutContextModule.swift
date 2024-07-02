@@ -21,14 +21,10 @@ public class ReactNativeLayoutContextModule: Module {
         NotificationCenter.default.addObserver(self, selector: #selector(self.keyboardDidShow), name: UIResponder.keyboardDidShowNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(self.keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(self.keyboardDidHide), name: UIResponder.keyboardDidHideNotification, object: nil)
-      // let view1 = self.getKeyboardViewReactNativeAnimated()
-//      let view2 = self.getKeyboardViewTelegram()
-      // print("view1: \(view1)")
-//      print("view2: \(view2)")
     }
 
     func unregisterFromNotifications() {
-    
+        NotificationCenter.default.removeObserver(self)
     }
     
     @objc func keyboardWillShow(aNotification: Notification) {
@@ -81,16 +77,6 @@ public class ReactNativeLayoutContextModule: Module {
 //        let windowClass = NSClassFromString("UIRemoteKeyboardWindow")
 //        let result = (windowClass as! UIRemoteKeyboardWindowProtocol).remoteKeyboardWindow(forScreen: UIScreen.main, create: false)
 //        return result!
-//    }
-    
-//    - (REAUIView *_Nullable)findClass:(NSString *)className inViewsList:(NSArray<REAUIView *> *)viewList
-//    {
-//      for (UIWindow *view in viewList) {
-//        if ([NSStringFromClass([view class]) isEqual:className]) {
-//          return view;
-//        }
-//      }
-//      return nil;
 //    }
 }
 

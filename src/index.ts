@@ -1,3 +1,4 @@
-import ReactNativeLayoutContextView from './ReactNativeLayoutContextView';
+import { LayoutContextView } from './LayoutContextView';
+import { useLayoutContext } from './LayoutContext';
 import { ReactNativeLayoutContextViewProps } from './ReactNativeLayoutContext.types';
-export { ReactNativeLayoutContextView as LayoutContextView, ReactNativeLayoutContextViewProps };
+export { LayoutContextView, useLayoutContext, ReactNativeLayoutContextViewProps };
