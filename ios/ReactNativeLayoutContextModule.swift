@@ -3,6 +3,7 @@ import ExpoModulesCore
 public class ReactNativeLayoutContextModule: Module {
   public func definition() -> ModuleDefinition {
       Name("ReactNativeLayoutContext")
+      Events("layoutEvent")
       View(ReactNativeLayoutContextView.self) {
           Prop("name") { (view: ReactNativeLayoutContextView, prop: String) in
               view.name = prop
@@ -28,51 +29,33 @@ public class ReactNativeLayoutContextModule: Module {
     }
     
     @objc func keyboardWillShow(aNotification: Notification) {
-        let view = getKeyboardViewReactNativeAnimated()
+        // let view = getKeyboardViewReactNativeAnimated()
         let responder = getCurrentFirstResponder()
-        let contextKey = responder?.currentLayoutContextKey() ?? "<none>"
-        print("[KEYBOARD]: Will Show: \(contextKey), \(responder)")
+        let contextKey = responder?.currentLayoutContextKey()
+        sendEvent("layoutEvent", parseKeyboardEvent(kind: "keyboardWillShow", aNotification: aNotification, context: contextKey))
     }
     
     @objc func keyboardDidShow(aNotification: Notification) {
-        let view = getKeyboardViewReactNativeAnimated()
+        // let view = getKeyboardViewReactNativeAnimated()
         let responder = getCurrentFirstResponder()
-        let contextKey = responder?.currentLayoutContextKey() ?? "<none>"
-        print("[KEYBOARD]: Did Show: \(contextKey), \(responder)")
+        let contextKey = responder?.currentLayoutContextKey()
+        sendEvent("layoutEvent", parseKeyboardEvent(kind: "keyboardDidShow", aNotification: aNotification, context: contextKey))
     }
     
     @objc func keyboardWillHide(aNotification: Notification) {
-        let view = getKeyboardViewReactNativeAnimated()
+        // let view = getKeyboardViewReactNativeAnimated()
         let responder = getCurrentFirstResponder()
-        let contextKey = responder?.currentLayoutContextKey() ?? "<none>"
-        print("[KEYBOARD]: Will Hide: \(contextKey), \(responder)")
+        let contextKey = responder?.currentLayoutContextKey()
+        sendEvent("layoutEvent", parseKeyboardEvent(kind: "keyboardWillHide", aNotification: aNotification, context: contextKey))
     }
     
     @objc func keyboardDidHide(aNotification: Notification) {
-        let view = getKeyboardViewReactNativeAnimated()
+        // let view = getKeyboardViewReactNativeAnimated()
         let responder = getCurrentFirstResponder()
-        let contextKey = responder?.currentLayoutContextKey() ?? "<none>"
-        print("[KEYBOARD]: Did Hide: \(contextKey), \(responder)")
+        let contextKey = responder?.currentLayoutContextKey()
+        sendEvent("layoutEvent", parseKeyboardEvent(kind: "keyboardDidHide", aNotification: aNotification, context: contextKey))
     }
     
-    //
-    // Loading Keyboard View
-    //
-    
-    func getKeyboardViewReactNativeAnimated() -> UIView? {
-        let windows = UIApplication.shared.windows
-        let window = findClass(name: "UITextEffectsWindow", inViewsList: windows)
-        if window == nil {
-            return nil
-        }
-        let keyboardContainer = findClass(name: "UIInputSetContainerView", inViewsList: window!.subviews)
-        if keyboardContainer == nil {
-            return nil
-        }
-        let keyboardView = findClass(name: "UIInputSetHostView", inViewsList: keyboardContainer!.subviews)
-        return keyboardView
-    }
-
 //    func getKeyboardViewTelegram() -> UIView {
 //        let windowClass = NSClassFromString("UIRemoteKeyboardWindow")
 //        let result = (windowClass as! UIRemoteKeyboardWindowProtocol).remoteKeyboardWindow(forScreen: UIScreen.main, create: false)
@@ -104,6 +87,56 @@ func getKeyboardViewReactNativeAnimated() -> UIView? {
     return nil
   }
   return findClass(name: "UIInputSetHostView", inViewsList: keyboardContainer!.subviews)
+}
+
+func convertRect(rect: CGRect) -> NSDictionary {
+    return [
+        "screenX": rect.origin.x,
+        "screenY": rect.origin.y,
+        "width": rect.size.width,
+        "height": rect.size.height
+    ]
+}
+
+func convertAnimationFrameCurve(curve: Int) -> String {
+    switch(curve) {
+    case UIView.AnimationCurve.easeIn.rawValue:
+        return "easeIn"
+    case UIView.AnimationCurve.easeInOut.rawValue:
+        return "easeInEaseOut"
+    case UIView.AnimationCurve.easeOut.rawValue:
+        return "easeOut"
+    case UIView.AnimationCurve.linear.rawValue:
+        return "linear"
+    default:
+        return "keyboard"
+    }
+}
+
+func parseKeyboardEvent(kind: String, aNotification: Notification, context: String?) -> [String: Any?] {
+    let userInfo = aNotification.userInfo
+    let beginFrame = userInfo?[UIResponder.keyboardFrameBeginUserInfoKey] as? CGRect ?? CGRect.zero
+    let endFrame = userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect ?? CGRect.zero
+    let duration = userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? TimeInterval ?? 0.0
+    let curve = convertAnimationFrameCurve(curve: userInfo?[UIResponder.keyboardAnimationCurveUserInfoKey] as? Int ?? 0)
+    let isLocalUserInfoKey = userInfo?[UIResponder.keyboardIsLocalUserInfoKey] as? Int ?? 0
+    let screenRect = UIScreen.main.bounds
+    let screenWidth = screenRect.size.width
+    let screenHeight = screenRect.size.height
+    
+    return [
+        "kind": kind,
+        "context": context,
+        "startCoordinates": convertRect(rect: beginFrame),
+        "endCoordinates": convertRect(rect: endFrame),
+        "duration": duration * 1000.0, // ms
+        "easing": curve,
+        "screen": [
+            "width": screenWidth,
+            "height": screenHeight
+        ],
+        "isEventFromThisApp": isLocalUserInfoKey == 1 ? true : false
+    ]
 }
 
 //

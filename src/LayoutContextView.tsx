@@ -5,7 +5,7 @@ import { LayoutContext } from './LayoutContext';
 
 export const LayoutContextView = React.memo((props: ReactNativeLayoutContextViewProps) => {
     return (
-        <LayoutContext.Provider value={{ name: props.name }}>
+        <LayoutContext.Provider value={props.name}>
             <ReactNativeLayoutContextView {...props} />
         </LayoutContext.Provider>
     )
