@@ -43,7 +43,7 @@ export const LayoutAvoidingView = React.memo((props: LayoutAvoidingViewProps) =>
     }, []);
 
     return (
-        <View style={[props.style, { paddingBottom: keyboardHeight }]}>
+        <View style={[props.style, { paddingBottom: keyboardHeight }]} collapsable={false}>
             {props.children}
         </View>
     )
