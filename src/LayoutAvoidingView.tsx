@@ -18,10 +18,12 @@ export const LayoutAvoidingView = React.memo((props: LayoutAvoidingViewProps) =>
     React.useLayoutEffect(() => {
         let lastHeight = 0;
         let subscription = addLayoutEventListener((event) => {
-            console.log(event);
+            if (event.kind !== 'keyboardWillShow' && event.kind !== 'keyboardWillHide' && event.kind !== 'keyboardWillChangeFrame') {
+                return;
+            }
             let targetHeight = 0;
             if (event.context === layout) {
-                targetHeight = event.screen.height - event.endCoordinates.screenY;
+                targetHeight = event.keyboardBottom;
             }
             if (targetHeight !== lastHeight) {
                 lastHeight = targetHeight;

@@ -10,7 +10,7 @@ const ContentView = React.memo((props: { autofocus: boolean }) => {
   const layout = useLayoutContext();
   return (
     <LayoutAvoidingView style={{ flexGrow: 1, alignSelf: 'stretch', justifyContent: 'center', alignItems: 'center', gap: 16 }}>
-      <View style={{ justifyContent: 'center', alignItems: 'center', gap: 16 }}>
+      <View style={{ justifyContent: 'center', alignItems: 'center', gap: 16, backgroundColor: 'red' }}>
         <Text style={{ fontSize: 24, color: 'white', fontWeight: '600', marginBottom: 16 }}>{layout}</Text>
         <TextInput style={{ width: 200, height: 48, backgroundColor: 'white', borderRadius: 8, fontSize: 18, paddingHorizontal: 16 }} placeholder='Tap me' autoFocus={props.autofocus} />
         <TextInput style={{ width: 200, height: 48, backgroundColor: 'white', borderRadius: 8, fontSize: 18, paddingHorizontal: 16 }} placeholder='Tap me' />
@@ -50,8 +50,10 @@ function DoubleScreen() {
 function AutofocusScreen() {
   return (
     <View style={{ flexDirection: 'row', flexGrow: 1, flexBasis: 0, alignItems: 'stretch' }}>
-      <LayoutContextView style={{ flexGrow: 1, flexBasis: 0, backgroundColor: 'red', flexDirection: 'column' }}>
-        <ContentView autofocus={true} />
+      <LayoutContextView style={{ flexGrow: 1, flexBasis: 0, backgroundColor: 'red', flexDirection: 'column', justifyContent: 'center' }}>
+        <View style={{ backgroundColor: 'pink' }}>
+          <ContentView autofocus={true} />
+        </View>
       </LayoutContextView>
     </View>
   );

@@ -22,6 +22,8 @@ public class ReactNativeLayoutContextModule: Module {
         NotificationCenter.default.addObserver(self, selector: #selector(self.keyboardDidShow), name: UIResponder.keyboardDidShowNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(self.keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(self.keyboardDidHide), name: UIResponder.keyboardDidHideNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(self.keyboardWillChangeFrameNotification), name: UIResponder.keyboardWillChangeFrameNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(self.keyboardDidChangeFrameNotification), name: UIResponder.keyboardDidChangeFrameNotification, object: nil)
     }
 
     func unregisterFromNotifications() {
@@ -29,38 +31,100 @@ public class ReactNativeLayoutContextModule: Module {
     }
     
     @objc func keyboardWillShow(aNotification: Notification) {
-        // let view = getKeyboardViewReactNativeAnimated()
         let responder = getCurrentFirstResponder()
-        let contextKey = responder?.currentLayoutContextKey()
-        sendEvent("layoutEvent", parseKeyboardEvent(kind: "keyboardWillShow", aNotification: aNotification, context: contextKey))
+        let contextView = responder?.currentLayoutContextView()
+        sendEvent("layoutEvent", prepareEvent(kind: "keyboardWillShow", aNotification: aNotification, context: contextView))
     }
     
     @objc func keyboardDidShow(aNotification: Notification) {
-        // let view = getKeyboardViewReactNativeAnimated()
         let responder = getCurrentFirstResponder()
-        let contextKey = responder?.currentLayoutContextKey()
-        sendEvent("layoutEvent", parseKeyboardEvent(kind: "keyboardDidShow", aNotification: aNotification, context: contextKey))
+        let contextView = responder?.currentLayoutContextView()
+        sendEvent("layoutEvent", prepareEvent(kind: "keyboardDidShow", aNotification: aNotification, context: contextView))
     }
     
     @objc func keyboardWillHide(aNotification: Notification) {
-        // let view = getKeyboardViewReactNativeAnimated()
         let responder = getCurrentFirstResponder()
-        let contextKey = responder?.currentLayoutContextKey()
-        sendEvent("layoutEvent", parseKeyboardEvent(kind: "keyboardWillHide", aNotification: aNotification, context: contextKey))
+        let contextView = responder?.currentLayoutContextView()
+        sendEvent("layoutEvent", prepareEvent(kind: "keyboardWillHide", aNotification: aNotification, context: contextView))
     }
     
     @objc func keyboardDidHide(aNotification: Notification) {
-        // let view = getKeyboardViewReactNativeAnimated()
         let responder = getCurrentFirstResponder()
-        let contextKey = responder?.currentLayoutContextKey()
-        sendEvent("layoutEvent", parseKeyboardEvent(kind: "keyboardDidHide", aNotification: aNotification, context: contextKey))
+        let contextView = responder?.currentLayoutContextView()
+        sendEvent("layoutEvent", prepareEvent(kind: "keyboardDidHide", aNotification: aNotification, context: contextView))
     }
     
-//    func getKeyboardViewTelegram() -> UIView {
-//        let windowClass = NSClassFromString("UIRemoteKeyboardWindow")
-//        let result = (windowClass as! UIRemoteKeyboardWindowProtocol).remoteKeyboardWindow(forScreen: UIScreen.main, create: false)
-//        return result!
-//    }
+    @objc func keyboardWillChangeFrameNotification(aNotification: Notification) {
+        let responder = getCurrentFirstResponder()
+        let contextView = responder?.currentLayoutContextView()
+        sendEvent("layoutEvent", prepareEvent(kind: "keyboardWillChangeFrameNotification", aNotification: aNotification, context: contextView))
+    }
+    
+    @objc func keyboardDidChangeFrameNotification(aNotification: Notification) {
+        let responder = getCurrentFirstResponder()
+        let contextView = responder?.currentLayoutContextView()
+        sendEvent("layoutEvent", prepareEvent(kind: "keyboardDidChangeFrameNotification", aNotification: aNotification, context: contextView))
+    }
+}
+
+//
+// Event
+//
+
+func prepareEvent(kind: String, aNotification: Notification, context: ReactNativeLayoutContextView?) -> [String: Any?] {
+    let userInfo = aNotification.userInfo
+    let beginFrame = userInfo?[UIResponder.keyboardFrameBeginUserInfoKey] as? CGRect ?? CGRect.zero
+    let endFrame = userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect ?? CGRect.zero
+    let duration = userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? TimeInterval ?? 0.0
+    let curve = convertAnimationFrameCurve(curve: userInfo?[UIResponder.keyboardAnimationCurveUserInfoKey] as? Int ?? 0)
+    let isLocalUserInfoKey = userInfo?[UIResponder.keyboardIsLocalUserInfoKey] as? Int ?? 0
+    let screenRect = UIScreen.main.bounds
+    let screenWidth = screenRect.size.width
+    let screenHeight = screenRect.size.height
+    
+    // Save insets
+    let window = UIApplication.shared.windows.first!
+    let safeInsets = window.safeAreaInsets
+    
+    // Safe
+    var safeBottom = safeInsets.bottom
+    var safeTop = safeInsets.top
+    var safeLeft = safeInsets.left
+    var safeRight = safeInsets.right
+    
+    // Keyboard bottom
+    var keyboardBottom = screenHeight - endFrame.origin.y
+    if context != nil {
+        let frame = context!.frame
+        let frameOrigin = context!.convert(frame.origin, to: nil)
+        let frameBottom = frameOrigin.y + frame.size.height
+        print("\(kind): \(frameBottom)")
+        keyboardBottom = max(frameBottom - endFrame.origin.y, 0)
+    }
+    
+    // Adjust safe bottom
+    safeBottom = max(safeBottom, keyboardBottom)
+    
+    return [
+        
+        // Vanila event
+        "kind": kind,
+        "startCoordinates": convertRect(rect: beginFrame),
+        "endCoordinates": convertRect(rect: endFrame),
+        "duration": duration * 1000.0, // ms
+        "easing": curve,
+        "isEventFromThisApp": isLocalUserInfoKey == 1 ? true : false,
+        
+        // Updated
+        "context": context?.name,
+        "keyboardBottom": keyboardBottom,
+        "safe": [
+            "top": safeTop,
+            "bottom": safeBottom,
+            "left": safeLeft,
+            "right": safeRight
+        ],
+    ]
 }
 
 //
@@ -113,32 +177,6 @@ func convertAnimationFrameCurve(curve: Int) -> String {
     }
 }
 
-func parseKeyboardEvent(kind: String, aNotification: Notification, context: String?) -> [String: Any?] {
-    let userInfo = aNotification.userInfo
-    let beginFrame = userInfo?[UIResponder.keyboardFrameBeginUserInfoKey] as? CGRect ?? CGRect.zero
-    let endFrame = userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect ?? CGRect.zero
-    let duration = userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? TimeInterval ?? 0.0
-    let curve = convertAnimationFrameCurve(curve: userInfo?[UIResponder.keyboardAnimationCurveUserInfoKey] as? Int ?? 0)
-    let isLocalUserInfoKey = userInfo?[UIResponder.keyboardIsLocalUserInfoKey] as? Int ?? 0
-    let screenRect = UIScreen.main.bounds
-    let screenWidth = screenRect.size.width
-    let screenHeight = screenRect.size.height
-    
-    return [
-        "kind": kind,
-        "context": context,
-        "startCoordinates": convertRect(rect: beginFrame),
-        "endCoordinates": convertRect(rect: endFrame),
-        "duration": duration * 1000.0, // ms
-        "easing": curve,
-        "screen": [
-            "width": screenWidth,
-            "height": screenHeight
-        ],
-        "isEventFromThisApp": isLocalUserInfoKey == 1 ? true : false
-    ]
-}
-
 //
 // First responder
 //
@@ -173,5 +211,11 @@ extension UIView {
             return (self as! ReactNativeLayoutContextView).name
         }
         return self.superview?.currentLayoutContextKey()
+    }
+    func currentLayoutContextView() -> ReactNativeLayoutContextView? {
+        if self is ReactNativeLayoutContextView {
+            return (self as! ReactNativeLayoutContextView)
+        }
+        return self.superview?.currentLayoutContextView()
     }
 }
